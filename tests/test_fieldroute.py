@@ -1,28 +1,32 @@
 """
 Unit tests for FieldRoute coverage path planning, fuel simulation,
-teardrop headland turns, and obstacle avoidance routing.
+teardrop headland turns, obstacle avoidance routing, and GIS/GeoJSON pipelines.
 """
 
+import os
 import pytest
 from shapely.geometry import Polygon, LineString
 from fieldroute import (
     Tractor,
     make_passes,
     best_angle,
-    path_length,
     generate_headland_turn,
     route_around_obstacles,
     static_dock,
     moving_dock,
     simulate,
     calculate_metrics,
+    gps_to_local_meters,
+    local_meters_to_gps,
+    load_geojson_field,
+    export_mission_geojson,
+    export_waypoint_csv,
 )
 
 
 @pytest.fixture
 def test_field():
-    field = Polygon([(0, 0), (200, 0), (200, 100), (0, 100)])
-    return field
+    return Polygon([(0, 0), (200, 0), (200, 100), (0, 100)])
 
 
 @pytest.fixture
@@ -58,7 +62,6 @@ def test_best_angle_finder(test_field):
 
 
 def test_teardrop_headland_turn():
-    # Test teardrop turn between row exit and entry
     p_exit = (100.0, 100.0)
     p_entry = (106.0, 100.0)
     v_exit = (0.0, 1.0)
@@ -67,7 +70,6 @@ def test_teardrop_headland_turn():
     assert len(turn_pts) >= 8
     assert turn_pts[0] == p_exit
     assert turn_pts[-1] == p_entry
-    # Teardrop turn should extend outward beyond row end
     max_y = max(p[1] for p in turn_pts)
     assert max_y > 100.0
 
@@ -95,7 +97,6 @@ def test_simulate_static_dock_with_obstacles(test_field, test_obstacle):
     assert res.time > 0
     assert len(res.segments) > 0
 
-    # Ensure zero segments intersect the obstacle
     for seg in res.segments:
         line = LineString([seg["p_start"], seg["p_end"]])
         assert not line.intersects(test_obstacle)
@@ -132,3 +133,39 @@ def test_metrics_calculation(test_field):
     assert "fuel_used_l" in metrics
     assert metrics["coverage_pct"] > 80.0
     assert metrics["overlap_pct"] > 0.0
+
+
+def test_gps_projection_roundtrip():
+    origin_lat, origin_lon = -1.292066, 36.821946
+    test_lat, test_lon = -1.294500, 36.824500
+
+    x, y = gps_to_local_meters(test_lat, test_lon, origin_lat, origin_lon)
+    lat_back, lon_back = local_meters_to_gps(x, y, origin_lat, origin_lon)
+
+    assert abs(lat_back - test_lat) < 1e-7
+    assert abs(lon_back - test_lon) < 1e-7
+
+
+def test_geojson_pipeline(tmp_path):
+    geojson_path = "examples/sample_farm.geojson"
+    assert os.path.exists(geojson_path)
+
+    field, obstacles, origin, dock = load_geojson_field(geojson_path)
+    assert field.area > 50000.0  # > 5 hectares
+    assert len(obstacles) == 1
+    assert dock is not None
+
+    tr = Tractor(width=8.0, tank=50.0)
+    passes = make_passes(field, obstacles, tr.width, 0.0)
+    dock_fn = static_dock(*dock)
+    res = simulate(passes, tr, dock_fn, obstacles=obstacles)
+
+    out_geojson = str(tmp_path / "test_mission.geojson")
+    out_csv = str(tmp_path / "test_waypoints.csv")
+    export_mission_geojson(field, obstacles, res, origin, out_geojson)
+    export_waypoint_csv(res, origin, out_csv)
+
+    assert os.path.exists(out_geojson)
+    assert os.path.exists(out_csv)
+    assert os.path.getsize(out_geojson) > 1000
+    assert os.path.getsize(out_csv) > 500

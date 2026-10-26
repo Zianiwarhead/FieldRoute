@@ -1,0 +1,60 @@
+{
+  "type": "FeatureCollection",
+  "name": "Kaputei_Demo_Field",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "North Field 1",
+        "type": "field",
+        "crop": "Corn",
+        "description": "Boundary surveyed with RTK markers"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [36.821946, -1.292066],
+            [36.825540, -1.292066],
+            [36.825810, -1.294314],
+            [36.823744, -1.294943],
+            [36.821766, -1.294404],
+            [36.821946, -1.292066]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Irrigation Pond",
+        "type": "obstacle",
+        "description": "Water collection basin and tree buffer"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [36.823295, -1.293144],
+            [36.823834, -1.293144],
+            [36.823834, -1.293593],
+            [36.823295, -1.293593],
+            [36.823295, -1.293144]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Depot Base Station",
+        "type": "dock",
+        "description": "Solar charging pad and implement dock"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [36.821676, -1.291796]
+      }
+    }
+  ]
+}

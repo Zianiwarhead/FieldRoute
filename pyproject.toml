@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fieldroute"
+version = "1.0.0"
+description = "Autonomous tractor coverage path planning and fuel/battery return-to-dock simulator"
+readme = "README.md"
+authors = [{ name = "FieldRoute Team" }]
+requires-python = ">=3.9"
+dependencies = [
+    "shapely>=2.0.0",
+    "matplotlib>=3.5.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
